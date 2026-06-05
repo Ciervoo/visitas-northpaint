@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visitas — North Paint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f11;--bg2:#17171a;--bg3:#1e1e22;--bg4:#26262c;
+  --border:#2e2e36;--border2:#3a3a44;
+  --text:#f0f0f2;--text2:#9999aa;--text3:#555566;
+  --accent:#1e3a5f;--accent2:#2a5298;--accent-light:#5b8dee;
+  --yellow:#f5c518;
+  --green:#4ade80;--green-bg:rgba(74,222,128,0.1);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.1);
+  --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.1);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.1);
+  --radius:10px;--radius-sm:6px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-size:14px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;background:var(--accent);border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:28px;height:28px;background:var(--yellow);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--accent)}
+.logo-text{font-weight:600;font-size:15px;letter-spacing:-0.3px;color:white}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-left:6px}
+.version{font-size:11px;color:rgba(255,255,255,0.3);font-family:'DM Mono',monospace}
+.main{flex:1;overflow-y:auto;background:var(--bg);padding:20px 20px 80px;-webkit-overflow-scrolling:touch}
+.section{display:none}.section.active{display:block}
+.section-title{font-size:18px;font-weight:600;letter-spacing:-0.4px;margin-bottom:16px}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bg2);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;z-index:100}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;cursor:pointer;color:var(--text3);font-size:9px;border-top:2px solid transparent;transition:all 0.15s}
+.nav-item.active{color:var(--accent-light);border-top-color:var(--accent-light)}
+.nav-item i{font-size:22px}
+
+/* Cards */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.metric-label{font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.metric-val{font-size:22px;font-weight:600;font-family:'DM Mono',monospace}
+
+/* Form */
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.form-card-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-group label{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:0.4px}
+.form-group input,.form-group select,.form-group textarea{
+  padding:11px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);
+  font-size:16px;background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;
+  outline:none;transition:border 0.15s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent-light)}
+.form-group textarea{resize:vertical;min-height:70px;font-size:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Toggle group */
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap}
+.toggle-opt{padding:8px 14px;border:1px solid var(--border2);border-radius:20px;font-size:13px;cursor:pointer;color:var(--text2);transition:all 0.15s;user-select:none}
+.toggle-opt.active-mateo{background:rgba(91,141,238,0.2);border-color:var(--accent-light);color:var(--accent-light);font-weight:500}
+.toggle-opt.active-santino{background:rgba(74,222,128,0.15);border-color:var(--green);color:var(--green);font-weight:500}
+.toggle-opt.active-diego{background:rgba(251,191,36,0.15);border-color:var(--amber);color:var(--amber);font-weight:500}
+.toggle-opt.active-yes{background:var(--green-bg);border-color:var(--green);color:var(--green);font-weight:500}
+.toggle-opt.active-no{background:var(--red-bg);border-color:var(--red);color:var(--red);font-weight:500}
+.toggle-opt.active-size{background:rgba(167,139,250,0.15);border-color:var(--purple);color:var(--purple);font-weight:500}
+
+/* Btn */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;transition:all 0.15s;font-weight:400}
+.btn:hover{background:var(--bg4)}
+.btn-primary{background:var(--accent-light);color:white;border-color:var(--accent-light);width:100%;justify-content:center;padding:13px;font-size:14px;font-weight:500;border-radius:var(--radius)}
+.btn-primary:hover{background:#4a7de8}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+
+/* Table */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;font-size:10px;font-weight:500;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;letter-spacing:0.5px}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-blue{background:rgba(91,141,238,0.15);color:var(--accent-light)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-purple{background:var(--purple-bg);color:var(--purple)}
+.badge-gray{background:rgba(153,153,170,0.1);color:var(--text2)}
+
+/* Visita card */
+.visita-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;transition:border-color 0.15s}
+.visita-card:hover{border-color:var(--border2)}
+.visita-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.visita-card-title{font-weight:500;font-size:14px}
+.visita-card-meta{font-size:12px;color:var(--text2);margin-top:3px}
+.visita-card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+
+/* Setup banner */
+#setup-banner{display:none;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:var(--radius);padding:14px;margin-bottom:16px}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;border:1px solid var(--border2);border-radius:20px;font-size:12px;cursor:pointer;background:transparent;color:var(--text2);transition:all 0.15s;font-family:'DM Sans',sans-serif}
+.filter-btn.active{background:var(--accent-light);color:white;border-color:var(--accent-light)}
+
+/* Vendor bar */
+.vendor-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.vendor-bar-wrap{flex:1;background:var(--bg3);border-radius:4px;height:8px;overflow:hidden}
+.vendor-bar{height:8px;border-radius:4px;transition:width 0.4s}
+.vendor-name{font-size:12px;color:var(--text2);width:60px;flex-shrink:0}
+.vendor-count{font-size:12px;font-family:'DM Mono',monospace;color:var(--text);width:24px;text-align:right;flex-shrink:0}
+
+/* Empty */
+.empty{text-align:center;padding:36px;color:var(--text3);font-size:13px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+select option{background:var(--bg3);color:var(--text)}
+
+/* Loading overlay */
+#loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div style="width:32px;height:32px;background:var(--yellow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--accent)">V</div>
+  <div style="color:var(--text2);font-size:13px">Cargando...</div>
+</div>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">NP</div>
+    <div class="logo-text">Visitas</div>
+    <span class="logo-sub">North Paint</span>
+  </div>
+  <span class="version">v1.0</span>
+</div>
+
+<div class="main">
+
+  <!-- ── NUEVA VISITA ── -->
+  <div class="section active" id="sec-nueva">
+    <div class="section-title">Nueva visita</div>
+
+    <div id="setup-banner">
+      <div style="display:flex;align-items:center;gap:8px;color:var(--amber);font-weight:500;margin-bottom:6px">
+        <i class="ti ti-alert-triangle"></i> Configuración requerida
+      </div>
+      <p style="font-size:12px;color:var(--text2)">La tabla de visitas no existe aún en Supabase. Ejecutá el SQL del README en el editor SQL de Supabase.</p>
+    </div>
+
+    <!-- Vendedor -->
+    <div class="form-card">
+      <div class="form-card-title"><i class="ti ti-user"></i> ¿Quién hace la visita?</div>
+      <div class="toggle-group" id="toggle-vendedor">
+        <div class="toggle-opt" data-val="Mateo"   onclick="selectToggle('vendedor','Mateo','active-mateo')">Mateo</div>
+        <div class="toggle-opt" data-val="Santino" onclick="selectToggle('vendedor','Santino','active-santino')">Santino</div>
+        <div class="toggle-opt" data-val="Diego"   onclick="selectToggle('vendedor','Diego','active-diego')">Diego</div>
+      </div>
+    </div>
+
+    <!-- Datos del taller -->
+    <div class="form-card">
+      <div class="form-card-title"><i class="ti ti-building"></i> Datos del taller</div>
+      <div class="form-group"><label>Nombre del taller *</label><input type="text" id="f-taller" placeholder="Ej: Taller GDR"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Nombre del dueño</label><input type="text" id="f-dueno" placeholder="Ej: Juan"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="f-tel" placeholder="11 1234-5678"></div>
+      </div>
+      <div class="form-group"><label>Dirección</label><input type="text" id="f-dir" placeholder="Calle 123, Localidad"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="f-fecha"></div>
+    </div>
+
+    <!-- Características -->
+    <div class="form-card">
+      <div class="form-card-title"><i class="ti ti-settings-2"></i> Características del taller</div>
+
+      <div class="form-group">
+        <label>Marca que usan</label>
+        <select id="f-marca">
+          <option value="">— Seleccionar —</option>
+          <option>Mediun / Sprint</option>
+          <option>Sikkens</option>
+          <option>Glasurit</option>
+          <option>Standox</option>
+          <option>PPG</option>
+          <option>Axalta</option>
+          <option>De Beers / Max Meyer</option>
+          <option>Lechler</option>
+          <option>Sin marca definida</option>
+          <option>Otra</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tamaño del taller</label>
+        <div class="toggle-group" id="toggle-tamano">
+          <div class="toggle-opt" data-val="Chico"   onclick="selectToggle('tamano','Chico','active-size')">Chico</div>
+          <div class="toggle-opt" data-val="Mediano" onclick="selectToggle('tamano','Mediano','active-size')">Mediano</div>
+          <div class="toggle-opt" data-val="Grande"  onclick="selectToggle('tamano','Grande','active-size')">Grande</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>¿Tiene cabina?</label>
+          <div class="toggle-group" id="toggle-cabina">
+            <div class="toggle-opt" data-val="true"  onclick="selectToggle('cabina','true','active-yes')">Sí</div>
+            <div class="toggle-opt" data-val="false" onclick="selectToggle('cabina','false','active-no')">No</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lab. de color</label>
+          <div class="toggle-group" id="toggle-lab">
+            <div class="toggle-opt" data-val="true"  onclick="selectToggle('lab','true','active-yes')">Sí</div>
+            <div class="toggle-opt" data-val="false" onclick="selectToggle('lab','false','active-no')">No</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <textarea id="f-notas" placeholder="Observaciones, interés en productos, seguimiento..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-registrar" onclick="registrarVisita()">
+      <i class="ti ti-map-pin"></i> Registrar visita
+    </button>
+  </div>
+
+  <!-- ── ESTADÍSTICAS ── -->
+  <div class="section" id="sec-stats">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="section-title" style="margin:0">Estadísticas</div>
+      <select id="stats-mes" onchange="renderStats()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;outline:none"></select>
+    </div>
+
+    <!-- Métricas principales -->
+    <div class="metrics" id="stats-metrics"></div>
+
+    <!-- Visitas por vendedor -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">Visitas por vendedor</div>
+      <div id="stats-vendedores"></div>
+    </div>
+
+    <!-- Visitas por marca -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Top marcas</div>
+      <div id="stats-marcas"></div>
+    </div>
+
+    <!-- Distribución -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Cabinas</div>
+        <div id="stats-cabinas"></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Tamaño</div>
+        <div id="stats-tamanos"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HISTORIAL ── -->
+  <div class="section" id="sec-historial">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-title" style="margin:0">Historial</div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-bar" id="filtro-vendedor">
+      <button class="filter-btn active" data-v="" onclick="setFiltroVendedor(this,'')">Todos</button>
+      <button class="filter-btn" data-v="Mateo"   onclick="setFiltroVendedor(this,'Mateo')">Mateo</button>
+      <button class="filter-btn" data-v="Santino" onclick="setFiltroVendedor(this,'Santino')">Santino</button>
+      <button class="filter-btn" data-v="Diego"   onclick="setFiltroVendedor(this,'Diego')">Diego</button>
+    </div>
+
+    <div id="historial-list"></div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <div class="nav-item active" onclick="showSection('nueva',this)"><i class="ti ti-map-pin-plus"></i>Nueva</div>
+  <div class="nav-item" onclick="showSection('stats',this)"><i class="ti ti-chart-bar"></i>Stats</div>
+  <div class="nav-item" onclick="showSection('historial',this)"><i class="ti ti-list"></i>Historial</div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://johglgodyqckaddkdwdk.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvaGdsZ29keXFja2FkZGtkd2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzOTQ0OTMsImV4cCI6MjA5NTk3MDQ5M30.qo2OWpTb3X-fdJmTWXSvfPCzKR0yqFjwnNhd73HZnVQ';
+const {createClient}=supabase;
+const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// Estado del formulario
+const formState={vendedor:null,tamano:null,cabina:null,lab:null};
+let visitas=[];
+let filtroVendedor='';
+
+// ── INIT ──
+async function initApp(){
+  document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
+  initMesFiltro();
+  try{
+    const {data,error}=await sb.from('visitas').select('*').order('fecha',{ascending:false});
+    if(error){
+      if(error.code==='42P01'||error.message?.includes('does not exist')){
+        document.getElementById('setup-banner').style.display='block';
+      }else throw error;
+    }else{
+      visitas=data||[];
+    }
+  }catch(e){
+    console.error(e);
+  }
+  document.getElementById('loading-overlay').style.display='none';
+}
+
+function initMesFiltro(){
+  const sel=document.getElementById('stats-mes');
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const hoy=new Date();
+  for(let i=0;i<6;i++){
+    const d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1);
+    const val=d.toISOString().slice(0,7);
+    const opt=document.createElement('option');
+    opt.value=val;
+    opt.textContent=meses[d.getMonth()]+' '+d.getFullYear();
+    if(i===0)opt.selected=true;
+    sel.appendChild(opt);
+  }
+}
+
+// ── NAV ──
+function showSection(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+  if(id==='stats')renderStats();
+  if(id==='historial')renderHistorial();
+}
+
+// ── TOGGLE SELECTS ──
+function selectToggle(field,val,cls){
+  formState[field]=val;
+  const group=document.getElementById('toggle-'+field);
+  group.querySelectorAll('.toggle-opt').forEach(opt=>{
+    opt.className='toggle-opt';
+    if(opt.dataset.val===val)opt.classList.add(cls);
+  });
+}
+
+// ── REGISTRAR VISITA ──
+async function registrarVisita(){
+  const btn=document.getElementById('btn-registrar');
+  if(!formState.vendedor){alert('Seleccioná quién hace la visita.');return;}
+  const taller=document.getElementById('f-taller').value.trim();
+  if(!taller){alert('El nombre del taller es obligatorio.');return;}
+
+  btn.disabled=true;
+  btn.textContent='Guardando...';
+
+  const nv={
+    id:Date.now(),
+    vendedor:formState.vendedor,
+    nombre_taller:taller,
+    dueno:document.getElementById('f-dueno').value.trim()||null,
+    telefono:document.getElementById('f-tel').value.trim()||null,
+    direccion:document.getElementById('f-dir').value.trim()||null,
+    fecha:document.getElementById('f-fecha').value,
+    marca:document.getElementById('f-marca').value||null,
+    tiene_cabina:formState.cabina==='true'?true:formState.cabina==='false'?false:null,
+    laboratorio_color:formState.lab==='true'?true:formState.lab==='false'?false:null,
+    tamano:formState.tamano||null,
+    notas:document.getElementById('f-notas').value.trim()||null,
+  };
+
+  try{
+    const {error}=await sb.from('visitas').insert(nv);
+    if(error)throw error;
+    visitas.unshift(nv);
+    resetForm();
+    showToast('✅ Visita registrada correctamente');
+  }catch(e){
+    console.error(e);
+    alert('Error al guardar: '+e.message);
+  }
+  btn.disabled=false;
+  btn.innerHTML='<i class="ti ti-map-pin"></i> Registrar visita';
+}
+
+function resetForm(){
+  document.getElementById('f-taller').value='';
+  document.getElementById('f-dueno').value='';
+  document.getElementById('f-tel').value='';
+  document.getElementById('f-dir').value='';
+  document.getElementById('f-notas').value='';
+  document.getElementById('f-marca').value='';
+  document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
+  // Reset toggles
+  ['vendedor','tamano','cabina','lab'].forEach(f=>{
+    formState[f]=null;
+    const g=document.getElementById('toggle-'+f);
+    if(g)g.querySelectorAll('.toggle-opt').forEach(o=>o.className='toggle-opt');
+  });
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1e1e22;border:1px solid #3a3a44;color:#f0f0f2;padding:10px 20px;border-radius:8px;font-size:13px;z-index:500;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+// ── STATS ──
+function renderStats(){
+  const mes=document.getElementById('stats-mes').value;
+  const vMes=visitas.filter(v=>v.fecha&&v.fecha.startsWith(mes));
+
+  // Métricas
+  const hoy=new Date().toISOString().slice(0,10);
+  const vHoy=vMes.filter(v=>v.fecha===hoy).length;
+  const conCabina=vMes.filter(v=>v.tiene_cabina).length;
+  const conLab=vMes.filter(v=>v.laboratorio_color).length;
+  document.getElementById('stats-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Total visitas</div><div class="metric-val">${vMes.length}</div></div>
+    <div class="metric"><div class="metric-label">Hoy</div><div class="metric-val" style="color:var(--accent-light)">${vHoy}</div></div>
+    <div class="metric"><div class="metric-label">Con cabina</div><div class="metric-val" style="color:var(--green)">${conCabina}</div></div>
+    <div class="metric"><div class="metric-label">Con laboratorio</div><div class="metric-val" style="color:var(--purple)">${conLab}</div></div>`;
+
+  // Por vendedor
+  const VENDEDORES=[{n:'Mateo',color:'var(--accent-light)'},{n:'Santino',color:'var(--green)'},{n:'Diego',color:'var(--amber)'}];
+  const max=Math.max(1,...VENDEDORES.map(v=>vMes.filter(x=>x.vendedor===v.n).length));
+  document.getElementById('stats-vendedores').innerHTML=VENDEDORES.map(v=>{
+    const cnt=vMes.filter(x=>x.vendedor===v.n).length;
+    const pct=Math.round(cnt/max*100);
+    return`<div class="vendor-row">
+      <div class="vendor-name">${v.n}</div>
+      <div class="vendor-bar-wrap"><div class="vendor-bar" style="width:${pct}%;background:${v.color}"></div></div>
+      <div class="vendor-count">${cnt}</div>
+    </div>`;
+  }).join('');
+
+  // Top marcas
+  const marcaMap={};
+  vMes.forEach(v=>{if(v.marca)marcaMap[v.marca]=(marcaMap[v.marca]||0)+1;});
+  const topMarcas=Object.entries(marcaMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxM=Math.max(1,...topMarcas.map(x=>x[1]));
+  document.getElementById('stats-marcas').innerHTML=topMarcas.length
+    ?topMarcas.map(([m,c])=>`<div class="vendor-row">
+        <div class="vendor-name" style="width:90px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m}</div>
+        <div class="vendor-bar-wrap"><div class="vendor-bar" style="width:${Math.round(c/maxM*100)}%;background:var(--purple)"></div></div>
+        <div class="vendor-count">${c}</div>
+      </div>`).join('')
+    :'<div class="empty" style="padding:12px">Sin datos</div>';
+
+  // Cabinas
+  const sinCabina=vMes.filter(v=>v.tiene_cabina===false).length;
+  const sinDatoC=vMes.filter(v=>v.tiene_cabina===null||v.tiene_cabina===undefined).length;
+  document.getElementById('stats-cabinas').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--green)">Con cabina</span><span class="badge badge-green">${conCabina}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--red)">Sin cabina</span><span class="badge badge-red">${sinCabina}</span></div>
+      ${sinDatoC?`<div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text3)">Sin dato</span><span class="badge badge-gray">${sinDatoC}</span></div>`:''}
+    </div>`;
+
+  // Tamaños
+  const tams={Chico:0,Mediano:0,Grande:0,sinDato:0};
+  vMes.forEach(v=>{if(v.tamano&&tams[v.tamano]!==undefined)tams[v.tamano]++;else if(!v.tamano)tams.sinDato++;});
+  document.getElementById('stats-tamanos').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--amber)">Grande</span><span class="badge badge-amber">${tams.Grande}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--accent-light)">Mediano</span><span class="badge badge-blue">${tams.Mediano}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text2)">Chico</span><span class="badge badge-gray">${tams.Chico}</span></div>
+    </div>`;
+}
+
+// ── HISTORIAL ──
+function setFiltroVendedor(el,v){
+  filtroVendedor=v;
+  document.querySelectorAll('#filtro-vendedor .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderHistorial();
+}
+
+function renderHistorial(){
+  const lista=filtroVendedor?visitas.filter(v=>v.vendedor===filtroVendedor):visitas;
+  const el=document.getElementById('historial-list');
+  if(!lista.length){el.innerHTML='<div class="empty">Sin visitas registradas</div>';return;}
+
+  const COLORS={Mateo:'var(--accent-light)',Santino:'var(--green)',Diego:'var(--amber)'};
+
+  el.innerHTML=lista.map(v=>{
+    const color=COLORS[v.vendedor]||'var(--text2)';
+    return`<div class="visita-card">
+      <div class="visita-card-header">
+        <div>
+          <div class="visita-card-title">${v.nombre_taller}</div>
+          <div class="visita-card-meta">${v.dueno?v.dueno+' · ':''}${v.direccion||''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px">
+          <span class="badge" style="background:rgba(255,255,255,0.06);color:${color};font-weight:600">${v.vendedor}</span>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace">${v.fecha||''}</div>
+        </div>
+      </div>
+      <div class="visita-card-tags">
+        ${v.marca?`<span class="badge badge-blue">${v.marca}</span>`:''}
+        ${v.tamano?`<span class="badge badge-purple">${v.tamano}</span>`:''}
+        ${v.tiene_cabina===true?'<span class="badge badge-green">Cabina ✓</span>':v.tiene_cabina===false?'<span class="badge badge-red">Sin cabina</span>':''}
+        ${v.laboratorio_color===true?'<span class="badge badge-amber">Lab. color ✓</span>':v.laboratorio_color===false?'<span class="badge badge-gray">Sin lab</span>':''}
+      </div>
+      ${v.notas?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${v.notas}</div>`:''}
+      ${v.telefono?`<div style="font-size:11px;color:var(--text3);margin-top:4px">📞 ${v.telefono}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+initApp();
+</script>
+</body>
+</html>
