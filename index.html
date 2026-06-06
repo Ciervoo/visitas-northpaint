@@ -136,6 +136,12 @@ select option{background:var(--bg3);color:var(--text)}
 
 /* Loading overlay */
 #loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
+
+/* Modal edición */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:flex-end}
+.modal-sheet{background:var(--bg2);border-radius:16px 16px 0 0;width:100%;max-height:90dvh;overflow-y:auto;padding:20px 20px 40px}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -345,6 +351,81 @@ select option{background:var(--bg3);color:var(--text)}
   <div class="nav-item" onclick="showSection('stats',this)"><i class="ti ti-chart-bar"></i>Stats</div>
   <div class="nav-item" onclick="showSection('historial',this)"><i class="ti ti-list"></i>Historial</div>
 </nav>
+
+<!-- Modal edición visita -->
+<div class="modal-overlay" id="modal-editar" style="display:none" onclick="cerrarModalEditar(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar visita</div>
+
+    <div class="form-card">
+      <div class="form-card-title"><i class="ti ti-user"></i> Vendedor</div>
+      <div class="toggle-group" id="toggle-edit-vendedor">
+        <div class="toggle-opt" data-val="Mateo"   onclick="selectToggleEdit('vendedor','Mateo','active-mateo')">Mateo</div>
+        <div class="toggle-opt" data-val="Santino" onclick="selectToggleEdit('vendedor','Santino','active-santino')">Santino</div>
+        <div class="toggle-opt" data-val="Diego"   onclick="selectToggleEdit('vendedor','Diego','active-diego')">Diego</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title"><i class="ti ti-building"></i> Datos del taller</div>
+      <div class="form-group"><label>Nombre del taller *</label><input type="text" id="edit-taller"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Dueño</label><input type="text" id="edit-dueno"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="edit-tel"></div>
+      </div>
+      <div class="form-group"><label>Dirección</label><input type="text" id="edit-dir"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="edit-fecha"></div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title"><i class="ti ti-settings-2"></i> Características</div>
+      <div class="form-group">
+        <label>Marca que usan</label>
+        <select id="edit-marca">
+          <option value="">— Seleccionar —</option>
+          <option>Mediun / Sprint</option><option>Sikkens</option><option>Glasurit</option>
+          <option>Standox</option><option>PPG</option><option>Axalta</option>
+          <option>De Beers / Max Meyer</option><option>Lechler</option>
+          <option>Sin marca definida</option><option>Otra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tamaño</label>
+        <div class="toggle-group" id="toggle-edit-tamano">
+          <div class="toggle-opt" data-val="Chico"   onclick="selectToggleEdit('tamano','Chico','active-size')">Chico</div>
+          <div class="toggle-opt" data-val="Mediano" onclick="selectToggleEdit('tamano','Mediano','active-size')">Mediano</div>
+          <div class="toggle-opt" data-val="Grande"  onclick="selectToggleEdit('tamano','Grande','active-size')">Grande</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>¿Tiene cabina?</label>
+          <div class="toggle-group" id="toggle-edit-cabina">
+            <div class="toggle-opt" data-val="true"  onclick="selectToggleEdit('cabina','true','active-yes')">Sí</div>
+            <div class="toggle-opt" data-val="false" onclick="selectToggleEdit('cabina','false','active-no')">No</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lab. de color</label>
+          <div class="toggle-group" id="toggle-edit-lab">
+            <div class="toggle-opt" data-val="true"  onclick="selectToggleEdit('lab','true','active-yes')">Sí</div>
+            <div class="toggle-opt" data-val="false" onclick="selectToggleEdit('lab','false','active-no')">No</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label>Notas</label><textarea id="edit-notas"></textarea></div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-guardar-edicion" onclick="guardarEdicionVisita()">
+      <i class="ti ti-check"></i> Guardar cambios
+    </button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px;color:var(--red);border-color:var(--red)" onclick="eliminarVisita()">
+      <i class="ti ti-trash"></i> Eliminar visita
+    </button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="cerrarModalEditar()">Cancelar</button>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -584,8 +665,112 @@ function renderHistorial(){
       </div>
       ${v.notas?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${v.notas}</div>`:''}
       ${v.telefono?`<div style="font-size:11px;color:var(--text3);margin-top:4px">📞 ${v.telefono}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <button class="btn" style="flex:1;justify-content:center;font-size:12px;padding:6px" onclick="abrirModalEditar('${v.id}')"><i class="ti ti-pencil"></i> Editar</button>
+      </div>
     </div>`;
   }).join('');
+}
+
+// ── EDITAR / ELIMINAR VISITA ──
+let editandoVisitaId=null;
+const formStateEdit={vendedor:null,tamano:null,cabina:null,lab:null};
+
+function abrirModalEditar(id){
+  const v=visitas.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  editandoVisitaId=id;
+
+  // Poblar campos
+  document.getElementById('edit-taller').value=v.nombre_taller||'';
+  document.getElementById('edit-dueno').value=v.dueno||'';
+  document.getElementById('edit-tel').value=v.telefono||'';
+  document.getElementById('edit-dir').value=v.direccion||'';
+  document.getElementById('edit-fecha').value=v.fecha||'';
+  document.getElementById('edit-notas').value=v.notas||'';
+  document.getElementById('edit-marca').value=v.marca||'';
+
+  // Toggles
+  const MAP={vendedor:v.vendedor,tamano:v.tamano,
+    cabina:v.tiene_cabina===true?'true':v.tiene_cabina===false?'false':null,
+    lab:v.laboratorio_color===true?'true':v.laboratorio_color===false?'false':null};
+  const CLS={vendedor:{Mateo:'active-mateo',Santino:'active-santino',Diego:'active-diego'},
+    tamano:{Chico:'active-size',Mediano:'active-size',Grande:'active-size'},
+    cabina:{true:'active-yes',false:'active-no'},lab:{true:'active-yes',false:'active-no'}};
+  ['vendedor','tamano','cabina','lab'].forEach(f=>{
+    formStateEdit[f]=MAP[f]||null;
+    const g=document.getElementById('toggle-edit-'+f);
+    if(!g)return;
+    g.querySelectorAll('.toggle-opt').forEach(o=>{
+      o.className='toggle-opt';
+      if(MAP[f]&&o.dataset.val===MAP[f])o.classList.add(CLS[f][MAP[f]]||'');
+    });
+  });
+
+  document.getElementById('modal-editar').style.display='flex';
+}
+
+function cerrarModalEditar(e){
+  if(e&&e.target!==document.getElementById('modal-editar'))return;
+  document.getElementById('modal-editar').style.display='none';
+  editandoVisitaId=null;
+}
+
+function selectToggleEdit(field,val,cls){
+  formStateEdit[field]=val;
+  const group=document.getElementById('toggle-edit-'+field);
+  group.querySelectorAll('.toggle-opt').forEach(opt=>{
+    opt.className='toggle-opt';
+    if(opt.dataset.val===val)opt.classList.add(cls);
+  });
+}
+
+async function guardarEdicionVisita(){
+  if(!editandoVisitaId)return;
+  const btn=document.getElementById('btn-guardar-edicion');
+  const taller=document.getElementById('edit-taller').value.trim();
+  if(!taller){alert('El nombre del taller es obligatorio.');return;}
+  btn.disabled=true;btn.textContent='Guardando...';
+
+  const cambios={
+    vendedor:formStateEdit.vendedor,
+    nombre_taller:taller,
+    dueno:document.getElementById('edit-dueno').value.trim()||null,
+    telefono:document.getElementById('edit-tel').value.trim()||null,
+    direccion:document.getElementById('edit-dir').value.trim()||null,
+    fecha:document.getElementById('edit-fecha').value,
+    marca:document.getElementById('edit-marca').value||null,
+    tamano:formStateEdit.tamano||null,
+    tiene_cabina:formStateEdit.cabina==='true'?true:formStateEdit.cabina==='false'?false:null,
+    laboratorio_color:formStateEdit.lab==='true'?true:formStateEdit.lab==='false'?false:null,
+    notas:document.getElementById('edit-notas').value.trim()||null,
+  };
+
+  try{
+    const {error}=await sb.from('visitas').update(cambios).eq('id',editandoVisitaId);
+    if(error)throw error;
+    const idx=visitas.findIndex(x=>String(x.id)===String(editandoVisitaId));
+    if(idx>=0)visitas[idx]={...visitas[idx],...cambios};
+    document.getElementById('modal-editar').style.display='none';
+    editandoVisitaId=null;
+    renderHistorial();
+    showToast('✅ Visita actualizada');
+  }catch(e){alert('Error: '+e.message);}
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Guardar cambios';
+}
+
+async function eliminarVisita(){
+  if(!editandoVisitaId)return;
+  if(!confirm('¿Eliminar esta visita? No se puede deshacer.'))return;
+  try{
+    const {error}=await sb.from('visitas').delete().eq('id',editandoVisitaId);
+    if(error)throw error;
+    visitas=visitas.filter(x=>String(x.id)!==String(editandoVisitaId));
+    document.getElementById('modal-editar').style.display='none';
+    editandoVisitaId=null;
+    renderHistorial();
+    showToast('🗑️ Visita eliminada');
+  }catch(e){alert('Error: '+e.message);}
 }
 
 // ── AGENDA / PROGRAMADAS ──
