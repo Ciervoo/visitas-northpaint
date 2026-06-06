@@ -298,11 +298,11 @@ select option{background:var(--bg3);color:var(--text)}
     <!-- Formulario (oculto por defecto) -->
     <div id="form-prog" style="display:none;margin-bottom:16px">
       <div class="form-card">
-        <div class="form-card-title"><i class="ti ti-user"></i> Vendedor</div>
+        <div class="form-card-title"><i class="ti ti-user"></i> Vendedor (podés elegir más de uno)</div>
         <div class="toggle-group" id="toggle-prog-vendedor">
-          <div class="toggle-opt" data-val="Mateo"   onclick="selectToggleProg('vendedor','Mateo','active-mateo')">Mateo</div>
-          <div class="toggle-opt" data-val="Santino" onclick="selectToggleProg('vendedor','Santino','active-santino')">Santino</div>
-          <div class="toggle-opt" data-val="Diego"   onclick="selectToggleProg('vendedor','Diego','active-diego')">Diego</div>
+          <div class="toggle-opt" data-val="Mateo"   onclick="toggleProgVendedor(this,'active-mateo')">Mateo</div>
+          <div class="toggle-opt" data-val="Santino" onclick="toggleProgVendedor(this,'active-santino')">Santino</div>
+          <div class="toggle-opt" data-val="Diego"   onclick="toggleProgVendedor(this,'active-diego')">Diego</div>
         </div>
       </div>
       <div class="form-card">
@@ -443,7 +443,7 @@ const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // Estado del formulario
 const formState={vendedor:null,tamano:null,cabina:null,lab:null};
-const formStateProg={vendedor:null,cliente:null};
+const formStateProg={vendedores:[],cliente:null};
 let visitas=[];
 let programadas=[];
 let filtroVendedor='';
@@ -797,6 +797,18 @@ function toggleFormProg(){
   btn.innerHTML=abierto?'<i class="ti ti-plus"></i> Programar':'<i class="ti ti-x"></i> Cerrar';
 }
 
+function toggleProgVendedor(el,cls){
+  const val=el.dataset.val;
+  const idx=formStateProg.vendedores.indexOf(val);
+  if(idx>=0){
+    formStateProg.vendedores.splice(idx,1);
+    el.className='toggle-opt';
+  }else{
+    formStateProg.vendedores.push(val);
+    el.classList.add(cls);
+  }
+}
+
 function selectToggleProg(field,val,cls){
   formStateProg[field]=val;
   const group=document.getElementById('toggle-prog-'+field);
@@ -808,7 +820,7 @@ function selectToggleProg(field,val,cls){
 
 async function programarVisita(){
   const btn=document.getElementById('btn-prog-guardar');
-  if(!formStateProg.vendedor){alert('Seleccioná el vendedor.');return;}
+  if(!formStateProg.vendedores.length){alert('Seleccioná al menos un vendedor.');return;}
   const taller=document.getElementById('pg-taller').value.trim();
   if(!taller){alert('El nombre del taller es obligatorio.');return;}
   const fecha=document.getElementById('pg-fecha').value;
@@ -817,7 +829,7 @@ async function programarVisita(){
   btn.disabled=true;btn.textContent='Guardando...';
 
   const nv={
-    vendedor:formStateProg.vendedor,
+    vendedor:formStateProg.vendedores.join(', '),
     nombre_taller:taller,
     dueno:document.getElementById('pg-dueno').value.trim()||null,
     telefono:document.getElementById('pg-tel').value.trim()||null,
@@ -851,7 +863,7 @@ function resetFormProg(){
   document.getElementById('pg-notas').value='';
   const manana=new Date();manana.setDate(manana.getDate()+1);
   document.getElementById('pg-fecha').value=manana.toISOString().slice(0,10);
-  formStateProg.vendedor=null;formStateProg.cliente=null;
+  formStateProg.vendedores=[];formStateProg.cliente=null;
   ['toggle-prog-vendedor','toggle-prog-cliente'].forEach(id=>{
     const g=document.getElementById(id);
     if(g)g.querySelectorAll('.toggle-opt').forEach(o=>o.className='toggle-opt');
