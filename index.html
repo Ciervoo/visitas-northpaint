@@ -124,6 +124,16 @@ tr:hover td{background:var(--bg3)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 select option{background:var(--bg3);color:var(--text)}
 
+/* Programadas */
+.prog-card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:var(--radius);padding:14px;margin-bottom:8px;transition:border-color 0.15s}
+.prog-card.hoy{border-left-color:var(--amber)}
+.prog-card.pasado{border-left-color:var(--red);opacity:0.7}
+.prog-card.futuro{border-left-color:var(--accent-light)}
+.prog-fecha-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:6px}
+.prog-fecha-chip.hoy{color:var(--amber);font-weight:600}
+.prog-fecha-chip.pasado{color:var(--red)}
+.nav-badge-dot{display:inline-block;background:var(--amber);color:#000;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;margin-left:3px;line-height:1.4}
+
 /* Loading overlay */
 #loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
 </style>
@@ -272,6 +282,42 @@ select option{background:var(--bg3);color:var(--text)}
     </div>
   </div>
 
+  <!-- ── AGENDA (PROGRAMADAS) ── -->
+  <div class="section" id="sec-programadas">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="section-title" style="margin:0">Agenda</div>
+      <button class="btn" id="btn-toggle-prog" onclick="toggleFormProg()"><i class="ti ti-plus"></i> Programar</button>
+    </div>
+
+    <!-- Formulario (oculto por defecto) -->
+    <div id="form-prog" style="display:none;margin-bottom:16px">
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-user"></i> Vendedor</div>
+        <div class="toggle-group" id="toggle-prog-vendedor">
+          <div class="toggle-opt" data-val="Mateo"   onclick="selectToggleProg('vendedor','Mateo','active-mateo')">Mateo</div>
+          <div class="toggle-opt" data-val="Santino" onclick="selectToggleProg('vendedor','Santino','active-santino')">Santino</div>
+          <div class="toggle-opt" data-val="Diego"   onclick="selectToggleProg('vendedor','Diego','active-diego')">Diego</div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title"><i class="ti ti-building"></i> Datos del taller</div>
+        <div class="form-group"><label>Nombre del taller *</label><input type="text" id="pg-taller" placeholder="Ej: Taller GDR"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Dueño</label><input type="text" id="pg-dueno" placeholder="Juan"></div>
+          <div class="form-group"><label>Teléfono</label><input type="tel" id="pg-tel" placeholder="11 1234-5678"></div>
+        </div>
+        <div class="form-group"><label>Fecha de visita *</label><input type="date" id="pg-fecha"></div>
+        <div class="form-group"><label>Notas / qué llevar</label><textarea id="pg-notas" placeholder="Qué productos llevar, qué hablar..."></textarea></div>
+      </div>
+      <button class="btn btn-primary" id="btn-prog-guardar" onclick="programarVisita()">
+        <i class="ti ti-calendar-plus"></i> Guardar en agenda
+      </button>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="toggleFormProg()">Cancelar</button>
+    </div>
+
+    <div id="programadas-list"></div>
+  </div>
+
   <!-- ── HISTORIAL ── -->
   <div class="section" id="sec-historial">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -294,6 +340,7 @@ select option{background:var(--bg3);color:var(--text)}
 <!-- Bottom nav -->
 <nav class="bottom-nav">
   <div class="nav-item active" onclick="showSection('nueva',this)"><i class="ti ti-map-pin-plus"></i>Nueva</div>
+  <div class="nav-item" onclick="showSection('programadas',this)" id="nav-programadas"><i class="ti ti-calendar"></i>Agenda<span id="prog-badge" style="display:none" class="nav-badge-dot"></span></div>
   <div class="nav-item" onclick="showSection('stats',this)"><i class="ti ti-chart-bar"></i>Stats</div>
   <div class="nav-item" onclick="showSection('historial',this)"><i class="ti ti-list"></i>Historial</div>
 </nav>
@@ -307,22 +354,31 @@ const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // Estado del formulario
 const formState={vendedor:null,tamano:null,cabina:null,lab:null};
+const formStateProg={vendedor:null};
 let visitas=[];
+let programadas=[];
 let filtroVendedor='';
 
 // ── INIT ──
 async function initApp(){
   document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
+  const manana=new Date();manana.setDate(manana.getDate()+1);
+  document.getElementById('pg-fecha').value=manana.toISOString().slice(0,10);
   initMesFiltro();
   try{
-    const {data,error}=await sb.from('visitas').select('*').order('fecha',{ascending:false});
-    if(error){
-      if(error.code==='42P01'||error.message?.includes('does not exist')){
+    const [{data:vData,error:vErr},{data:pData}]=await Promise.all([
+      sb.from('visitas').select('*').order('fecha',{ascending:false}),
+      sb.from('visitas_programadas').select('*').order('fecha',{ascending:true})
+    ]);
+    if(vErr){
+      if(vErr.code==='42P01'||vErr.message?.includes('does not exist')){
         document.getElementById('setup-banner').style.display='block';
-      }else throw error;
+      }else throw vErr;
     }else{
-      visitas=data||[];
+      visitas=vData||[];
     }
+    programadas=pData||[];
+    actualizarBadgeProg();
   }catch(e){
     console.error(e);
   }
@@ -352,6 +408,7 @@ function showSection(id,el){
   if(el)el.classList.add('active');
   if(id==='stats')renderStats();
   if(id==='historial')renderHistorial();
+  if(id==='programadas')renderProgramadas();
 }
 
 // ── TOGGLE SELECTS ──
@@ -526,6 +583,135 @@ function renderHistorial(){
       </div>
       ${v.notas?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${v.notas}</div>`:''}
       ${v.telefono?`<div style="font-size:11px;color:var(--text3);margin-top:4px">📞 ${v.telefono}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── AGENDA / PROGRAMADAS ──
+function actualizarBadgeProg(){
+  const hoy=new Date().toISOString().slice(0,10);
+  const cnt=programadas.filter(p=>p.fecha===hoy).length;
+  const badge=document.getElementById('prog-badge');
+  if(cnt>0){badge.textContent=cnt;badge.style.display='inline-block';}
+  else{badge.style.display='none';}
+}
+
+function toggleFormProg(){
+  const f=document.getElementById('form-prog');
+  const btn=document.getElementById('btn-toggle-prog');
+  const abierto=f.style.display!=='none';
+  f.style.display=abierto?'none':'block';
+  btn.innerHTML=abierto?'<i class="ti ti-plus"></i> Programar':'<i class="ti ti-x"></i> Cerrar';
+}
+
+function selectToggleProg(field,val,cls){
+  formStateProg[field]=val;
+  const group=document.getElementById('toggle-prog-'+field);
+  group.querySelectorAll('.toggle-opt').forEach(opt=>{
+    opt.className='toggle-opt';
+    if(opt.dataset.val===val)opt.classList.add(cls);
+  });
+}
+
+async function programarVisita(){
+  const btn=document.getElementById('btn-prog-guardar');
+  if(!formStateProg.vendedor){alert('Seleccioná el vendedor.');return;}
+  const taller=document.getElementById('pg-taller').value.trim();
+  if(!taller){alert('El nombre del taller es obligatorio.');return;}
+  const fecha=document.getElementById('pg-fecha').value;
+  if(!fecha){alert('Seleccioná una fecha.');return;}
+
+  btn.disabled=true;btn.textContent='Guardando...';
+
+  const nv={
+    vendedor:formStateProg.vendedor,
+    nombre_taller:taller,
+    dueno:document.getElementById('pg-dueno').value.trim()||null,
+    telefono:document.getElementById('pg-tel').value.trim()||null,
+    fecha,
+    notas:document.getElementById('pg-notas').value.trim()||null,
+  };
+
+  try{
+    const {data,error}=await sb.from('visitas_programadas').insert(nv).select().single();
+    if(error)throw error;
+    programadas.push(data||nv);
+    programadas.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    actualizarBadgeProg();
+    resetFormProg();
+    toggleFormProg();
+    renderProgramadas();
+    showToast('📅 Visita programada correctamente');
+  }catch(e){
+    console.error(e);alert('Error: '+e.message);
+  }
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-calendar-plus"></i> Guardar en agenda';
+}
+
+function resetFormProg(){
+  document.getElementById('pg-taller').value='';
+  document.getElementById('pg-dueno').value='';
+  document.getElementById('pg-tel').value='';
+  document.getElementById('pg-notas').value='';
+  const manana=new Date();manana.setDate(manana.getDate()+1);
+  document.getElementById('pg-fecha').value=manana.toISOString().slice(0,10);
+  formStateProg.vendedor=null;
+  const g=document.getElementById('toggle-prog-vendedor');
+  if(g)g.querySelectorAll('.toggle-opt').forEach(o=>o.className='toggle-opt');
+}
+
+async function marcarRealizada(id){
+  if(!confirm('¿Marcar esta visita como realizada y eliminarla de la agenda?'))return;
+  try{
+    const {error}=await sb.from('visitas_programadas').delete().eq('id',id);
+    if(error)throw error;
+    programadas=programadas.filter(p=>p.id!==id);
+    actualizarBadgeProg();
+    renderProgramadas();
+    showToast('✅ Visita marcada como realizada');
+  }catch(e){
+    console.error(e);alert('Error: '+e.message);
+  }
+}
+
+function renderProgramadas(){
+  const el=document.getElementById('programadas-list');
+  if(!programadas.length){
+    el.innerHTML='<div class="empty">No hay visitas programadas</div>';
+    return;
+  }
+  const hoy=new Date().toISOString().slice(0,10);
+  const COLORS={Mateo:'var(--accent-light)',Santino:'var(--green)',Diego:'var(--amber)'};
+  const BADGE={Mateo:'badge-blue',Santino:'badge-green',Diego:'badge-amber'};
+
+  const fmt=f=>{
+    if(!f)return'';
+    const [y,m,d]=f.split('-');
+    const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return`${d} ${meses[parseInt(m)-1]} ${y}`;
+  };
+
+  el.innerHTML=programadas.map(p=>{
+    const esHoy=p.fecha===hoy;
+    const esPasado=p.fecha<hoy;
+    const cardCls=esHoy?'hoy':esPasado?'pasado':'futuro';
+    const fechaCls=esHoy?'hoy':esPasado?'pasado':'';
+    const fechaLabel=esHoy?`<b>HOY</b> — ${fmt(p.fecha)}`:esPasado?`⚠️ ${fmt(p.fecha)}`:fmt(p.fecha);
+    return`<div class="prog-card ${cardCls}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div class="prog-fecha-chip ${fechaCls}"><i class="ti ti-calendar-event" style="font-size:12px"></i>${fechaLabel}</div>
+          <div class="visita-card-title">${p.nombre_taller}</div>
+          ${p.dueno?`<div class="visita-card-meta">${p.dueno}${p.telefono?' · '+p.telefono:''}</div>`:''}
+          ${p.notas?`<div style="font-size:12px;color:var(--text2);margin-top:6px">${p.notas}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
+          <span class="badge ${BADGE[p.vendedor]||'badge-gray'}">${p.vendedor||'—'}</span>
+          <button class="btn" style="font-size:11px;padding:5px 10px;color:var(--green);border-color:var(--green)" onclick="marcarRealizada(${p.id})">
+            <i class="ti ti-check"></i> Realizada
+          </button>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
